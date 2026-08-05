@@ -1,0 +1,35 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  cafeConfig CafeConfig?
+}
+
+model CafeConfig {
+  id                        String   @id @default(cuid())
+  userId                    String   @unique
+  googleServiceAccountEmail String?
+  googlePrivateKey          String?
+  spreadsheetId             String?
+  sheetName                 String?
+  telegramBotToken          String?
+  telegramChatId            String?
+  openRouterApiKey          String?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

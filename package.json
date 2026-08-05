@@ -1,0 +1,34 @@
+{
+  "name": "cafe-middleware-saas",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@prisma/client": "^5.14.0",
+    "axios": "^1.6.8",
+    "bcryptjs": "^2.4.3",
+    "csv-parse": "^5.5.5",
+    "googleapis": "^134.0.0",
+    "moment-timezone": "^0.5.45",
+    "next": "14.2.5",
+    "next-auth": "^4.24.7",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.12.12",
+    "@types/node-cron": "^3.0.11",
+    "@types/react": "^18.3.2",
+    "@types/react-dom": "^18.3.0",
+    "prisma": "^5.14.0",
+    "typescript": "^5.4.5"
+  }
+}
