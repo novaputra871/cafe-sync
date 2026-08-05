@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
       try {
         const auth = new google.auth.JWT(
           config.googleServiceAccountEmail,
-          null,
+          undefined,
           config.googlePrivateKey.replace(/\\n/g, '\n'),
           ['https://www.googleapis.com/auth/spreadsheets']
         );
