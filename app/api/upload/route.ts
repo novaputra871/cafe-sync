@@ -139,42 +139,34 @@ Berdasarkan data ini, berikan 1 paragraf (maksimal 3 kalimat) wawasan (insight) 
 
     if (config.openRouterApiKey) {
       const modelsToTry = [
-        "openrouter/auto",
-        "nvidia/llama-3.1-nemotron-ultra-253b:free",
-        "inclusionai/ling-3.0-flash:free",
+        "llama-3.3-70b-versatile",
+        "llama-3.1-8b-instant",
+        "gemma2-9b-it",
       ];
 
-      for (const modelId of modelsToTry) {
+      for (const model of modelsToTry) {
         try {
-          console.log(`[AI] Mencoba model: ${modelId}`);
+          console.log(`[AI] Mencoba model: ${model}`);
           const response = await axios.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            {
-              model: modelId,
-              messages: [
-                { role: "user", content: prompt }
-              ]
-            },
+            "https://api.groq.com/openai/v1/chat/completions",
+            { model, messages: [{ role: "user", content: prompt }], max_tokens: 300 },
             {
               headers: {
                 "Authorization": `Bearer ${config.openRouterApiKey}`,
                 "Content-Type": "application/json",
-                "HTTP-Referer": "http://localhost:3000",
-                "X-Title": "Cafe Middleware SaaS"
               },
-              timeout: 15000
+              timeout: 10000
             }
           );
 
           if (response.data?.choices?.[0]?.message?.content) {
             aiFeedback = response.data.choices[0].message.content.trim();
-            console.log(`[AI] Berhasil menggunakan model: ${modelId}`);
+            console.log(`[AI] Berhasil dengan model: ${model}`);
             break;
           }
         } catch (err: any) {
-          const errDetail = err.response?.data?.error?.message || err.response?.data?.error || err.message;
-          console.error(`[AI] Gagal model ${modelId}:`, errDetail);
-          aiFeedback = `Gagal memproses AI. Model terakhir dicoba: ${modelId}. Error: ${String(errDetail).substring(0, 100)}`;
+          console.error(`[AI] Gagal model ${model}:`, err.response?.status || err.message);
+          aiFeedback = "AI sedang tidak tersedia.";
         }
       }
     }

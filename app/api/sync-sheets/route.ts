@@ -78,7 +78,7 @@ export async function POST(req: Request) {
       sheets, config.spreadsheetId, config.sheetName, dashboardData, reportType
     ).catch(err => console.error('[Dashboard] Error:', err.message));
 
-    // Step B: AI call with short timeout (single model for speed)
+    // Step B: AI call via Groq (fast & free)
     let aiFeedback = "AI tidak tersedia.";
     const aiPromise = (async () => {
       if (!config.openRouterApiKey) return;
@@ -89,22 +89,35 @@ export async function POST(req: Request) {
 - Menu Terlaku: ${Object.entries(menuCount).sort((a,b) => b[1] - a[1])[0]?.[0] || 'N/A'}
 Berikan 1 paragraf (maks 3 kalimat) insight bisnis tajam dan saran strategi aksi. Bahasa Indonesia profesional.`;
 
-        const response = await axios.post(
-          "https://openrouter.ai/api/v1/chat/completions",
-          { model: "openrouter/auto", messages: [{ role: "user", content: prompt }] },
-          {
-            headers: {
-              "Authorization": `Bearer ${config.openRouterApiKey}`,
-              "Content-Type": "application/json",
-              "HTTP-Referer": "https://cafesinc.netlify.app",
-              "X-Title": "Cafe Middleware SaaS"
-            },
-            timeout: 10000
+        const modelsToTry = [
+          "llama-3.3-70b-versatile",
+          "llama-3.1-8b-instant",
+          "gemma2-9b-it",
+        ];
+
+        for (const model of modelsToTry) {
+          try {
+            const response = await axios.post(
+              "https://api.groq.com/openai/v1/chat/completions",
+              { model, messages: [{ role: "user", content: prompt }], max_tokens: 300 },
+              {
+                headers: {
+                  "Authorization": `Bearer ${config.openRouterApiKey}`,
+                  "Content-Type": "application/json",
+                },
+                timeout: 10000
+              }
+            );
+            if (response.data?.choices?.[0]?.message?.content) {
+              aiFeedback = response.data.choices[0].message.content.trim();
+              console.log(`[AI] Berhasil dengan model: ${model}`);
+              return;
+            }
+          } catch (err: any) {
+            console.error(`[AI] Gagal model ${model}:`, err.response?.status || err.message);
           }
-        );
-        if (response.data?.choices?.[0]?.message?.content) {
-          aiFeedback = response.data.choices[0].message.content.trim();
         }
+        aiFeedback = "AI sedang tidak tersedia.";
       } catch (err: any) {
         console.error('[AI] Error:', err.message);
         aiFeedback = "AI sedang tidak tersedia.";
