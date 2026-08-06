@@ -80,7 +80,11 @@ export async function POST(req: Request) {
 - Omzet: Rp ${totalRevenue.toLocaleString('id-ID')}, Transaksi: ${totalTransactions}, Rata-rata/Nota: Rp ${Math.round(avgPerNota).toLocaleString('id-ID')}, Item: ${totalItemsSold}
 - Kategori Terlaris: ${Object.entries(categoryRevenue).sort((a,b) => b[1] - a[1])[0]?.[0] || 'N/A'}
 - Menu Terlaku: ${Object.entries(menuCount).sort((a,b) => b[1] - a[1])[0]?.[0] || 'N/A'}
-Berikan 1 paragraf (maks 3 kalimat) insight bisnis tajam dan saran strategi aksi. Bahasa Indonesia profesional.`;
+
+Berikan insight bisnis tajam dan saran strategi aksi. 
+Format jawaban Anda WAJIB persis seperti ini (tanpa awalan/akhiran lain):
+Wawasan Bisnis: [1-2 kalimat insight]
+Strategi Aksi: [1-2 kalimat strategi yang bisa langsung diterapkan]`;
 
         const modelsToTry = [
           "llama-3.3-70b-versatile",

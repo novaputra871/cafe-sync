@@ -135,7 +135,10 @@ Berikut adalah ringkasannya:
 - Menu Paling Laku: ${Object.entries(menuCount).sort((a,b) => b[1] - a[1])[0]?.[0] || 'N/A'}
 ${reportType === 'harian' ? `- Waktu Tersibuk: Jam ${peakHourStr} (${peakHourCount} transaksi)` : ''}
 
-Berdasarkan data ini, berikan 1 paragraf (maksimal 3 kalimat) wawasan (insight) bisnis yang tajam dan satu saran strategi aksi (actionable strategy) untuk meningkatkan profit. Gunakan bahasa Indonesia yang profesional dan memotivasi.`;
+Berikan insight bisnis tajam dan saran strategi aksi. 
+Format jawaban Anda WAJIB persis seperti ini (tanpa awalan/akhiran lain):
+Wawasan Bisnis: [1-2 kalimat insight berdasarkan data]
+Strategi Aksi: [1-2 kalimat strategi yang bisa langsung diterapkan]`;
 
     if (config.openRouterApiKey) {
       const modelsToTry = [
