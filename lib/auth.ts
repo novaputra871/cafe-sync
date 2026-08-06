@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET || "cafesync-production-secret-2026-dalang",
   providers: [
     CredentialsProvider({
       name: "Credentials",
