@@ -39,25 +39,9 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const fileContent = buffer.toString('utf-8');
 
-    // 1. Save Backup Locally
-    const uploadsDir = path.join(process.cwd(), 'uploads');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-
-    const files = fs.readdirSync(uploadsDir);
-    let nextNum = 1;
-    files.forEach(f => {
-      const match = f.match(/Laporan Harian (\d+)\.csv/);
-      if (match) {
-        const num = parseInt(match[1], 10);
-        if (num >= nextNum) nextNum = num + 1;
-      }
-    });
-
-    const fileName = `Laporan Harian ${String(nextNum).padStart(2, '0')}.csv`;
-    const filePath = path.join(uploadsDir, fileName);
-    fs.writeFileSync(filePath, buffer);
+    // In serverless environment (Netlify/Vercel), we cannot save to local filesystem
+    // We will just process it in memory.
+    const fileName = `Laporan_${reportType}_${new Date().getTime()}.csv`;
 
     // Detect delimiter
     const delimiter = fileContent.includes(';') && (fileContent.split(';').length > fileContent.split(',').length) ? ';' : ',';
