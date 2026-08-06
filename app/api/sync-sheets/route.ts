@@ -239,7 +239,7 @@ Berdasarkan data historis ini, berikan 1 paragraf (maksimal 3 kalimat) wawasan (
 
     // 6. Generate Dashboard in Google Sheets
     dashboardData.aiFeedback = aiFeedback;
-    await setupAdvancedDashboardProgrammatically(sheets, config.spreadsheetId, config.sheetName, dashboardData, reportType);
+    setupAdvancedDashboardProgrammatically(sheets, config.spreadsheetId, config.sheetName, dashboardData, reportType).catch(console.error);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
