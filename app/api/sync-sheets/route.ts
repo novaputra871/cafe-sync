@@ -72,16 +72,9 @@ export async function POST(req: Request) {
       aiFeedback: ''
     };
 
-    // 4. AI + Dashboard + Telegram — run in optimized order to beat 30s timeout
-    // Step A: Start dashboard generation immediately (no AI text yet)
-    const dashboardPromise = setupAdvancedDashboardProgrammatically(
-      sheets, config.spreadsheetId, config.sheetName, dashboardData, reportType
-    ).catch(err => console.error('[Dashboard] Error:', err.message));
-
-    // Step B: AI call via Groq (fast & free)
+    // Step A: AI call via Groq (fast & free)
     let aiFeedback = "AI tidak tersedia.";
-    const aiPromise = (async () => {
-      if (!config.openRouterApiKey) return;
+    if (config.openRouterApiKey) {
       try {
         const prompt = `Anda adalah ahli konsultan bisnis F&B. Ringkasan laporan ${reportType.toUpperCase()} kafe:
 - Omzet: Rp ${totalRevenue.toLocaleString('id-ID')}, Transaksi: ${totalTransactions}, Rata-rata/Nota: Rp ${Math.round(avgPerNota).toLocaleString('id-ID')}, Item: ${totalItemsSold}
@@ -105,27 +98,32 @@ Berikan 1 paragraf (maks 3 kalimat) insight bisnis tajam dan saran strategi aksi
                   "Authorization": `Bearer ${config.openRouterApiKey}`,
                   "Content-Type": "application/json",
                 },
-                timeout: 10000
+                timeout: 8000 // 8s timeout to leave time for Google Sheets
               }
             );
             if (response.data?.choices?.[0]?.message?.content) {
               aiFeedback = response.data.choices[0].message.content.trim();
               console.log(`[AI] Berhasil dengan model: ${model}`);
-              return;
+              break;
             }
           } catch (err: any) {
             console.error(`[AI] Gagal model ${model}:`, err.response?.status || err.message);
           }
         }
-        aiFeedback = "AI sedang tidak tersedia.";
+        if (aiFeedback === "AI tidak tersedia.") {
+            aiFeedback = "AI gagal memproses (timeout/error).";
+        }
       } catch (err: any) {
         console.error('[AI] Error:', err.message);
         aiFeedback = "AI sedang tidak tersedia.";
       }
-    })();
+    }
 
-    // Wait for BOTH dashboard and AI to finish
-    await Promise.all([dashboardPromise, aiPromise]);
+    // Step B: Start dashboard generation (NOW with AI text)
+    dashboardData.aiFeedback = aiFeedback;
+    await setupAdvancedDashboardProgrammatically(
+      sheets, config.spreadsheetId, config.sheetName, dashboardData, reportType
+    ).catch(err => console.error('[Dashboard] Error:', err.message));
 
     const topMenus = Object.entries(menuCount).sort((a, b) => b[1] - a[1]).slice(0, 3);
     const topMenuText = topMenus.map((m, i) => `${i + 1}. ${m[0]} (${m[1]} porsi)`).join('\n');
