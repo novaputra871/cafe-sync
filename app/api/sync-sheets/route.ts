@@ -5,6 +5,7 @@ import { google } from 'googleapis';
 import prisma from '@/lib/prisma';
 import axios from 'axios';
 import { setupAdvancedDashboardProgrammatically, DashboardData } from '@/lib/setup-dashboard';
+import { detectColumns, aggregateData } from '@/lib/smart-parser';
 
 export async function POST(req: Request) {
   try {
@@ -46,114 +47,24 @@ export async function POST(req: Request) {
     const headers = rows[0].map((h: any) => String(h).toLowerCase().trim());
     const dataRows = rows.slice(1);
 
-    // 3. Process and Aggregate Data
-    let totalRevenue = 0;
-    let totalItemsSold = 0;
-    const totalTransactions = dataRows.length;
-    const menuCount: Record<string, number> = {};
-    const menuRevenue: Record<string, number> = {};
-    const hourCount: Record<string, number> = {};
-    const hourRevenue: Record<string, number> = {};
-    const categoryRevenue: Record<string, number> = {};
-    const categoryCount: Record<string, number> = {};
-    const customerRevenue: Record<string, number> = {};
-    const dayRevenue: Record<string, number> = {};
-
-    dataRows.forEach((row: any[]) => {
-      const getVal = (possibleNames: string[]) => {
-        const index = headers.findIndex((h: string) => possibleNames.some(name => h.includes(name.toLowerCase())));
-        return index !== -1 ? row[index] : undefined;
-      };
-
-      const revStr = getVal(['total pendapatan', 'omzet', 'total', 'revenue']) || '0';
-      const qtyStr = getVal(['jumlah terjual', 'qty', 'jumlah', 'porsi']) || '0';
-      const menu = getVal(['nama menu', 'menu', 'produk', 'item']);
-      const jamStr = getVal(['jam', 'time', 'waktu']);
-      const kategori = getVal(['kategori', 'category', 'jenis']);
-      const pelanggan = getVal(['nama pelanggan', 'pelanggan', 'customer']);
-      const hari = getVal(['hari', 'day']);
-      const tanggalStr = getVal(['tanggal', 'date', 'tgl', 'waktu', 'time', 'hari', 'created_at']);
-      
-      const rev = parseFloat(String(revStr).replace(/[^0-9.-]+/g,""));
-      const qty = parseInt(String(qtyStr).replace(/[^0-9.-]+/g,""), 10);
-      
-      if (!isNaN(rev)) totalRevenue += rev;
-      if (!isNaN(qty)) {
-        totalItemsSold += qty;
-        if (menu && String(menu).trim() !== '' && String(menu).trim() !== '-') {
-          menuCount[String(menu)] = (menuCount[String(menu)] || 0) + qty;
-        }
-      }
-
-      if (menu && String(menu).trim() !== '' && String(menu).trim() !== '-' && !isNaN(rev)) {
-        const menuName = String(menu).trim();
-        menuRevenue[menuName] = (menuRevenue[menuName] || 0) + rev;
-      }
-
-      if (jamStr) {
-        const match = String(jamStr).match(/^(\d{1,2}):/);
-        if (match) {
-          const hour = parseInt(match[1], 10);
-          hourCount[hour] = (hourCount[hour] || 0) + 1;
-          if (!isNaN(rev)) hourRevenue[hour] = (hourRevenue[hour] || 0) + rev;
-        }
-      }
-
-      if (kategori && String(kategori).trim() !== '' && String(kategori).trim() !== '-') {
-        const catName = String(kategori).trim();
-        if (!isNaN(rev)) categoryRevenue[catName] = (categoryRevenue[catName] || 0) + rev;
-        if (!isNaN(qty)) categoryCount[catName] = (categoryCount[catName] || 0) + qty;
-      }
-
-      if (pelanggan && String(pelanggan).trim() !== '' && String(pelanggan).trim() !== '-' && !isNaN(rev)) {
-        const customerName = String(pelanggan).trim();
-        customerRevenue[customerName] = (customerRevenue[customerName] || 0) + rev;
-      }
-
-      // Track time period revenue based on reportType
-      if (!isNaN(rev)) {
-        if (reportType === 'bulanan' && tanggalStr) {
-          let dateNum = '';
-          const dateObj = new Date(String(tanggalStr));
-          if (!isNaN(dateObj.getTime())) {
-            dateNum = dateObj.getDate().toString();
-          } else {
-            const match = String(tanggalStr).match(/^(\d{1,2})[\/\-]/);
-            if (match) {
-              dateNum = match[1];
-            } else {
-              dateNum = String(tanggalStr).trim().substring(0, 10);
-            }
-          }
-          dayRevenue[dateNum] = (dayRevenue[dateNum] || 0) + rev;
-        } else if (reportType === 'tahunan' && tanggalStr) {
-          const dateObj = new Date(String(tanggalStr));
-          if (!isNaN(dateObj.getTime())) {
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-            const monthName = months[dateObj.getMonth()];
-            dayRevenue[monthName] = (dayRevenue[monthName] || 0) + rev;
-          }
-        } else if (reportType === 'harian') {
-          if (hari && String(hari).trim() !== '' && String(hari).trim() !== '-') {
-            const dayName = String(hari).trim();
-            dayRevenue[dayName] = (dayRevenue[dayName] || 0) + rev;
-          }
-        }
-      }
+    // 3. Smart column detection + aggregation
+    const colMap = detectColumns(headers, dataRows);
+    console.log('[Sync] Detected columns:', JSON.stringify(colMap));
+    
+    const agg = aggregateData(dataRows, colMap, reportType);
+    console.log('[Sync] Aggregated:', {
+      totalRevenue: agg.totalRevenue,
+      totalTransactions: agg.totalTransactions,
+      dayRevenueKeys: Object.keys(agg.dayRevenue).length,
+      hourCountKeys: Object.keys(agg.hourCount).length,
     });
 
-    let peakHourStr = "Data tidak tersedia";
-    let peakHourCount = 0;
-    const hours = Object.keys(hourCount).map(Number).sort((a,b) => hourCount[b] - hourCount[a]);
-    if (hours.length > 0) {
-      const peakHour = hours[0];
-      peakHourCount = hourCount[peakHour];
-      const nextHour = (peakHour + 1).toString().padStart(2, '0');
-      const startHour = peakHour.toString().padStart(2, '0');
-      peakHourStr = `${startHour}:00 - ${nextHour}:00`;
-    }
-
-    const avgPerNota = totalTransactions > 0 ? (totalRevenue / totalTransactions) : 0;
+    const {
+      totalRevenue, totalTransactions, totalItemsSold, avgPerNota,
+      menuCount, menuRevenue, hourCount, hourRevenue,
+      categoryRevenue, categoryCount, customerRevenue, dayRevenue,
+      peakHourStr, peakHourCount,
+    } = agg;
 
     const dashboardData: DashboardData = {
       totalRevenue, totalTransactions, totalItemsSold, avgPerNota,
@@ -197,7 +108,7 @@ Berdasarkan data historis ini, berikan 1 paragraf (maksimal 3 kalimat) wawasan (
                 "HTTP-Referer": "http://localhost:3000",
                 "X-Title": "Cafe Middleware SaaS"
               },
-              timeout: 30000
+              timeout: 15000
             }
           );
 
