@@ -72,7 +72,7 @@ export async function POST(req: Request) {
       const kategori = getVal(['kategori', 'category', 'jenis']);
       const pelanggan = getVal(['nama pelanggan', 'pelanggan', 'customer']);
       const hari = getVal(['hari', 'day']);
-      const tanggalStr = getVal(['tanggal', 'date', 'tgl']);
+      const tanggalStr = getVal(['tanggal', 'date', 'tgl', 'waktu', 'time', 'hari', 'created_at']);
       
       const rev = parseFloat(String(revStr).replace(/[^0-9.-]+/g,""));
       const qty = parseInt(String(qtyStr).replace(/[^0-9.-]+/g,""), 10);
@@ -113,14 +113,19 @@ export async function POST(req: Request) {
       // Track time period revenue based on reportType
       if (!isNaN(rev)) {
         if (reportType === 'bulanan' && tanggalStr) {
+          let dateNum = '';
           const dateObj = new Date(String(tanggalStr));
           if (!isNaN(dateObj.getTime())) {
-            const dateNum = dateObj.getDate().toString();
-            dayRevenue[dateNum] = (dayRevenue[dateNum] || 0) + rev;
+            dateNum = dateObj.getDate().toString();
           } else {
-            const dStr = String(tanggalStr).trim();
-            dayRevenue[dStr] = (dayRevenue[dStr] || 0) + rev;
+            const match = String(tanggalStr).match(/^(\d{1,2})[\/\-]/);
+            if (match) {
+              dateNum = match[1];
+            } else {
+              dateNum = String(tanggalStr).trim().substring(0, 10);
+            }
           }
+          dayRevenue[dateNum] = (dayRevenue[dateNum] || 0) + rev;
         } else if (reportType === 'tahunan' && tanggalStr) {
           const dateObj = new Date(String(tanggalStr));
           if (!isNaN(dateObj.getTime())) {
