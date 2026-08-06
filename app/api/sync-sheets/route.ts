@@ -45,13 +45,27 @@ export async function POST(req: Request) {
     }
 
     const headers = rows[0].map((h: any) => String(h).toLowerCase().trim());
-    const dataRows = rows.slice(1);
+    let csvRows = rows.slice(1);
 
     // 3. Smart column detection + aggregation
-    const colMap = detectColumns(headers, dataRows);
+    const colMap = detectColumns(headers, csvRows);
     console.log('[Sync] Detected columns:', JSON.stringify(colMap));
     
-    const agg = aggregateData(dataRows, colMap, reportType);
+    // If harian, filter csvRows to ONLY include rows from the latest date in the sheet
+    if (reportType === 'harian' && csvRows.length > 0 && colMap.dateIdx !== -1) {
+      const lastRowDate = String(csvRows[csvRows.length - 1][colMap.dateIdx] || '').trim();
+      const lastDatePart = lastRowDate.split(' ')[0].split('T')[0]; // Extract just the date part (ignoring time)
+      if (lastDatePart) {
+        csvRows = csvRows.filter(r => {
+          const d = String(r[colMap.dateIdx] || '').trim();
+          const dPart = d.split(' ')[0].split('T')[0];
+          return dPart === lastDatePart;
+        });
+        console.log(`[Sync] Filtered for harian. Latest date: ${lastDatePart}. Rows remaining: ${csvRows.length}`);
+      }
+    }
+
+    const agg = aggregateData(csvRows, colMap, reportType);
     console.log('[Sync] Aggregated:', {
       totalRevenue: agg.totalRevenue,
       totalTransactions: agg.totalTransactions,

@@ -212,7 +212,7 @@ Strategi Aksi: [1-2 kalimat strategi yang bisa langsung diterapkan]`;
       const dashboardData = (global as any).__dashboardData as DashboardData | undefined;
       if (sheetsInstance && dashboardData) {
         dashboardData.aiFeedback = aiFeedback;
-        setupAdvancedDashboardProgrammatically(sheetsInstance, config.spreadsheetId, config.sheetName, dashboardData, reportType).catch(console.error);
+        await setupAdvancedDashboardProgrammatically(sheetsInstance, config.spreadsheetId, config.sheetName, dashboardData, reportType).catch(console.error);
         // Clean up
         delete (global as any).__sheetsInstance;
         delete (global as any).__dashboardData;
