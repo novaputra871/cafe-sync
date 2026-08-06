@@ -191,9 +191,9 @@ export async function setupAdvancedDashboardProgrammatically(
       });
     }
 
-    // AI Insight (row 5-6)
-    fmt.push({ mergeCells: { range: { sheetId: dashSheetId, startRowIndex: 5, endRowIndex: 7, startColumnIndex: 0, endColumnIndex: 12 }, mergeType: 'MERGE_ALL' } });
-    fmt.push({ updateDimensionProperties: { range: { sheetId: dashSheetId, dimension: 'ROWS', startIndex: 5, endIndex: 7 }, properties: { pixelSize: 60 }, fields: 'pixelSize' } });
+    // AI Insight (row 5-8)
+    fmt.push({ mergeCells: { range: { sheetId: dashSheetId, startRowIndex: 5, endRowIndex: 9, startColumnIndex: 0, endColumnIndex: 12 }, mergeType: 'MERGE_ALL' } });
+    fmt.push({ updateDimensionProperties: { range: { sheetId: dashSheetId, dimension: 'ROWS', startIndex: 5, endIndex: 9 }, properties: { pixelSize: 60 }, fields: 'pixelSize' } });
     fmt.push({
       updateCells: {
         start: { sheetId: dashSheetId, rowIndex: 5, columnIndex: 0 },
@@ -224,7 +224,7 @@ export async function setupAdvancedDashboardProgrammatically(
               },
               backgroundColorStyle: { rgbColor: chartBg }
             },
-            position: { overlayPosition: { anchorCell: { sheetId: dashSheetId, rowIndex: 7, columnIndex: 0 }, widthPixels: 580, heightPixels: 300 } }
+            position: { overlayPosition: { anchorCell: { sheetId: dashSheetId, rowIndex: 9, columnIndex: 0 }, widthPixels: 580, heightPixels: 300 } }
           }
         }
       });
@@ -247,7 +247,7 @@ export async function setupAdvancedDashboardProgrammatically(
               },
               backgroundColorStyle: { rgbColor: chartBg }
             },
-            position: { overlayPosition: { anchorCell: { sheetId: dashSheetId, rowIndex: 7, columnIndex: 6 }, widthPixels: 580, heightPixels: 300 } }
+            position: { overlayPosition: { anchorCell: { sheetId: dashSheetId, rowIndex: 9, columnIndex: 6 }, widthPixels: 580, heightPixels: 300 } }
           }
         }
       });
@@ -270,7 +270,7 @@ export async function setupAdvancedDashboardProgrammatically(
               },
               backgroundColorStyle: { rgbColor: chartBg }
             },
-            position: { overlayPosition: { anchorCell: { sheetId: dashSheetId, rowIndex: 23, columnIndex: 0 }, widthPixels: 580, heightPixels: 400 } }
+            position: { overlayPosition: { anchorCell: { sheetId: dashSheetId, rowIndex: 25, columnIndex: 0 }, widthPixels: 580, heightPixels: 400 } }
           }
         }
       });
@@ -292,7 +292,7 @@ export async function setupAdvancedDashboardProgrammatically(
               },
               backgroundColorStyle: { rgbColor: chartBg }
             },
-            position: { overlayPosition: { anchorCell: { sheetId: dashSheetId, rowIndex: 23, columnIndex: 6 }, widthPixels: 580, heightPixels: 400 } }
+            position: { overlayPosition: { anchorCell: { sheetId: dashSheetId, rowIndex: 25, columnIndex: 6 }, widthPixels: 580, heightPixels: 400 } }
           }
         }
       });
