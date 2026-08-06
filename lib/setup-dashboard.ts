@@ -191,12 +191,12 @@ export async function setupAdvancedDashboardProgrammatically(
       });
     }
 
-    // AI Insight (row 5)
-    fmt.push({ mergeCells: { range: { sheetId: dashSheetId, startRowIndex: 5, endRowIndex: 6, startColumnIndex: 0, endColumnIndex: 12 }, mergeType: 'MERGE_ALL' } });
+    // AI Insight (row 5-6)
+    fmt.push({ mergeCells: { range: { sheetId: dashSheetId, startRowIndex: 5, endRowIndex: 7, startColumnIndex: 0, endColumnIndex: 12 }, mergeType: 'MERGE_ALL' } });
     fmt.push({
       updateCells: {
         start: { sheetId: dashSheetId, rowIndex: 5, columnIndex: 0 },
-        rows: [{ values: [{ userEnteredValue: { stringValue: `💡 AI Insight: ${data.aiFeedback}` }, userEnteredFormat: { backgroundColor: { red: 0.13, green: 0.17, blue: 0.22 }, textFormat: { fontSize: 10, italic: true, foregroundColor: { red: 0.75, green: 0.85, blue: 1 }, fontFamily: 'Roboto' }, wrapStrategy: 'WRAP', borders: { left: { style: 'SOLID', width: 3, colorStyle: { rgbColor: blue } } } } }] }],
+        rows: [{ values: [{ userEnteredValue: { stringValue: `💡 AI Insight:\n\n${data.aiFeedback}` }, userEnteredFormat: { backgroundColor: { red: 0.13, green: 0.17, blue: 0.22 }, textFormat: { fontSize: 10, italic: true, foregroundColor: { red: 0.75, green: 0.85, blue: 1 }, fontFamily: 'Roboto' }, wrapStrategy: 'WRAP', borders: { left: { style: 'SOLID', width: 3, colorStyle: { rgbColor: blue } } } } }] }],
         fields: 'userEnteredValue,userEnteredFormat'
       }
     });

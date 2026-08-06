@@ -163,7 +163,10 @@ Strategi Aksi: [1-2 kalimat strategi yang bisa langsung diterapkan]`;
           );
 
           if (response.data?.choices?.[0]?.message?.content) {
-            aiFeedback = response.data.choices[0].message.content.trim();
+            let text = response.data.choices[0].message.content.trim();
+            // Pastikan ada 2 baris enter sebelum Strategi Aksi agar ada jarak
+            text = text.replace(/(?:\r\n|\r|\n)*Strategi Aksi:/gi, '\n\nStrategi Aksi:');
+            aiFeedback = text;
             console.log(`[AI] Berhasil dengan model: ${model}`);
             break;
           }
