@@ -72,60 +72,52 @@ export async function POST(req: Request) {
       aiFeedback: ''
     };
 
-    // 4. OpenRouter AI Integration
-    let aiFeedback = "Belum ada API Key OpenRouter yang dikonfigurasi di Web Dashboard.";
-    const prompt = `Anda adalah ahli konsultan bisnis F&B. Saya baru saja mengambil laporan penjualan (${reportType.toUpperCase()}) kafe saya dari database Google Sheets.
-Berikut adalah ringkasannya:
-- Total Omzet: Rp ${totalRevenue.toLocaleString('id-ID')}
-- Total Transaksi: ${totalTransactions}
-- Rata-rata per Nota: Rp ${Math.round(avgPerNota).toLocaleString('id-ID')}
-- Item Terjual: ${totalItemsSold}
+    // 4. AI + Dashboard + Telegram — run in optimized order to beat 30s timeout
+    // Step A: Start dashboard generation immediately (no AI text yet)
+    const dashboardPromise = setupAdvancedDashboardProgrammatically(
+      sheets, config.spreadsheetId, config.sheetName, dashboardData, reportType
+    ).catch(err => console.error('[Dashboard] Error:', err.message));
+
+    // Step B: AI call with short timeout (single model for speed)
+    let aiFeedback = "AI tidak tersedia.";
+    const aiPromise = (async () => {
+      if (!config.openRouterApiKey) return;
+      try {
+        const prompt = `Anda adalah ahli konsultan bisnis F&B. Ringkasan laporan ${reportType.toUpperCase()} kafe:
+- Omzet: Rp ${totalRevenue.toLocaleString('id-ID')}, Transaksi: ${totalTransactions}, Rata-rata/Nota: Rp ${Math.round(avgPerNota).toLocaleString('id-ID')}, Item: ${totalItemsSold}
 - Kategori Terlaris: ${Object.entries(categoryRevenue).sort((a,b) => b[1] - a[1])[0]?.[0] || 'N/A'}
-- Menu Paling Laku: ${Object.entries(menuCount).sort((a,b) => b[1] - a[1])[0]?.[0] || 'N/A'}
-${reportType === 'harian' ? `- Waktu Tersibuk: Jam ${peakHourStr} (${peakHourCount} transaksi)` : ''}
+- Menu Terlaku: ${Object.entries(menuCount).sort((a,b) => b[1] - a[1])[0]?.[0] || 'N/A'}
+Berikan 1 paragraf (maks 3 kalimat) insight bisnis tajam dan saran strategi aksi. Bahasa Indonesia profesional.`;
 
-Berdasarkan data historis ini, berikan 1 paragraf (maksimal 3 kalimat) wawasan (insight) bisnis yang tajam dan satu saran strategi aksi (actionable strategy) untuk meningkatkan profit. Gunakan bahasa Indonesia yang profesional dan memotivasi.`;
-
-    if (config.openRouterApiKey) {
-      const modelsToTry = [
-        "openrouter/auto",
-        "nvidia/llama-3.1-nemotron-ultra-253b:free",
-        "inclusionai/ling-3.0-flash:free",
-      ];
-
-      for (const modelId of modelsToTry) {
-        try {
-          const response = await axios.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            {
-              model: modelId,
-              messages: [{ role: "user", content: prompt }]
+        const response = await axios.post(
+          "https://openrouter.ai/api/v1/chat/completions",
+          { model: "openrouter/auto", messages: [{ role: "user", content: prompt }] },
+          {
+            headers: {
+              "Authorization": `Bearer ${config.openRouterApiKey}`,
+              "Content-Type": "application/json",
+              "HTTP-Referer": "https://cafesinc.netlify.app",
+              "X-Title": "Cafe Middleware SaaS"
             },
-            {
-              headers: {
-                "Authorization": `Bearer ${config.openRouterApiKey}`,
-                "Content-Type": "application/json",
-                "HTTP-Referer": "http://localhost:3000",
-                "X-Title": "Cafe Middleware SaaS"
-              },
-              timeout: 15000
-            }
-          );
-
-          if (response.data?.choices?.[0]?.message?.content) {
-            aiFeedback = response.data.choices[0].message.content.trim();
-            break;
+            timeout: 10000
           }
-        } catch (err: any) {
-          aiFeedback = `Gagal memproses AI. Error.`;
+        );
+        if (response.data?.choices?.[0]?.message?.content) {
+          aiFeedback = response.data.choices[0].message.content.trim();
         }
+      } catch (err: any) {
+        console.error('[AI] Error:', err.message);
+        aiFeedback = "AI sedang tidak tersedia.";
       }
-    }
+    })();
+
+    // Wait for BOTH dashboard and AI to finish
+    await Promise.all([dashboardPromise, aiPromise]);
 
     const topMenus = Object.entries(menuCount).sort((a, b) => b[1] - a[1]).slice(0, 3);
     const topMenuText = topMenus.map((m, i) => `${i + 1}. ${m[0]} (${m[1]} porsi)`).join('\n');
 
-    // 5. Send Telegram Notification
+    // Step C: Telegram notification (after AI so we have the insight text)
     if (config.telegramBotToken && config.telegramChatId) {
       try {
         const spreadsheetLink = config.spreadsheetId 
@@ -152,10 +144,6 @@ Berdasarkan data historis ini, berikan 1 paragraf (maksimal 3 kalimat) wawasan (
         console.error('Telegram error:', err.message);
       }
     }
-
-    // 6. Generate Dashboard in Google Sheets
-    dashboardData.aiFeedback = aiFeedback;
-    setupAdvancedDashboardProgrammatically(sheets, config.spreadsheetId, config.sheetName, dashboardData, reportType).catch(console.error);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
