@@ -345,7 +345,9 @@ export async function setupAdvancedDashboardProgrammatically(
     });
 
     console.log('[Dashboard] Advanced Dashboard berhasil dibuat!');
+    return dashSheetId;
   } catch (error: any) {
     console.error('[Dashboard] Gagal membuat dashboard:', error.message);
+    throw error;
   }
 }

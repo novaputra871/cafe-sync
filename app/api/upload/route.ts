@@ -177,12 +177,30 @@ Strategi Aksi: [1-2 kalimat strategi yang bisa langsung diterapkan]`;
       }
     }
 
-    // 5. Send Telegram Notification
+    // 5. Generate Dashboard in Google Sheets (after AI so we include the insight)
+    let dashSheetId: number | undefined = undefined;
+    if (config.googleServiceAccountEmail && config.googlePrivateKey && config.spreadsheetId && config.sheetName) {
+      const sheetsInstance = (global as any).__sheetsInstance;
+      const dashboardData = (global as any).__dashboardData as DashboardData | undefined;
+      if (sheetsInstance && dashboardData) {
+        dashboardData.aiFeedback = aiFeedback;
+        dashSheetId = await setupAdvancedDashboardProgrammatically(sheetsInstance, config.spreadsheetId, config.sheetName, dashboardData, reportType).catch(console.error);
+        // Clean up
+        delete (global as any).__sheetsInstance;
+        delete (global as any).__dashboardData;
+      }
+    }
+
+    // 6. Send Telegram Notification
     if (config.telegramBotToken && config.telegramChatId) {
       try {
-        const spreadsheetLink = config.spreadsheetId 
+        let spreadsheetLink = config.spreadsheetId 
           ? `https://docs.google.com/spreadsheets/d/${config.spreadsheetId}/edit` 
           : "https://docs.google.com/spreadsheets/";
+          
+        if (dashSheetId !== undefined) {
+          spreadsheetLink += `#gid=${dashSheetId}`;
+        }
         
         const reportTitle = reportType.charAt(0).toUpperCase() + reportType.slice(1);
         const message = `📊 *Rekap Laporan ${reportTitle} Selesai*\n\n` +
@@ -203,19 +221,6 @@ Strategi Aksi: [1-2 kalimat strategi yang bisa langsung diterapkan]`;
         });
       } catch (err: any) {
         console.error('Telegram error:', err.message);
-      }
-    }
-
-    // 6. Generate Dashboard in Google Sheets (after AI so we include the insight)
-    if (config.googleServiceAccountEmail && config.googlePrivateKey && config.spreadsheetId && config.sheetName) {
-      const sheetsInstance = (global as any).__sheetsInstance;
-      const dashboardData = (global as any).__dashboardData as DashboardData | undefined;
-      if (sheetsInstance && dashboardData) {
-        dashboardData.aiFeedback = aiFeedback;
-        await setupAdvancedDashboardProgrammatically(sheetsInstance, config.spreadsheetId, config.sheetName, dashboardData, reportType).catch(console.error);
-        // Clean up
-        delete (global as any).__sheetsInstance;
-        delete (global as any).__dashboardData;
       }
     }
 
