@@ -107,7 +107,7 @@ export async function setupAdvancedDashboardProgrammatically(
 
     const dashRes = await sheets.spreadsheets.batchUpdate({
       spreadsheetId,
-      requestBody: { requests: [{ addSheet: { properties: { title: dashboardName, gridProperties: { rowCount: 80, columnCount: 14, hideGridlines: true } } } }] }
+      requestBody: { requests: [{ addSheet: { properties: { title: dashboardName, index: 0, gridProperties: { rowCount: 80, columnCount: 14, hideGridlines: true } } } }] }
     });
     const dashSheetId = dashRes.data.replies[0].addSheet.properties.sheetId;
 
